@@ -1,101 +1,132 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import React, { useRef, useEffect } from 'react'
+
+export default function Component() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const setCanvasSize = () => {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+    }
+    setCanvasSize()
+
+    class Particle {
+      x: number
+      y: number
+      size: number
+      targetX: number
+      targetY: number
+      color: string
+      speed: number
+      angle: number
+      rising: boolean
+
+      constructor(x: number, y: number, targetX: number, targetY: number) {
+        this.x = x
+        this.y = y
+        this.size = Math.random() * 2 + 1
+        this.targetX = targetX
+        this.targetY = targetY
+        this.color = `rgba(0, ${Math.floor(Math.random() * 55 + 200)}, ${Math.floor(Math.random() * 55 + 200)}, ${Math.random() * 0.3 + 0.5})`
+        this.speed = Math.random() * 0.5 + 0.2
+        this.angle = Math.random() * Math.PI * 2
+        this.rising = false
+      }
+
+      update(time: number) {
+        if (!this.rising && Math.random() < 0.01) {
+          this.rising = true
+        }
+
+        if (this.rising) {
+          const dx = this.targetX - this.x
+          const dy = this.targetY - this.y
+          const distance = Math.sqrt(dx * dx + dy * dy)
+
+          if (distance > 1) {
+            this.x += dx * this.speed * 0.01
+            this.y += dy * this.speed * 0.01
+          } else {
+            this.x = this.targetX
+            this.y = this.targetY
+          }
+        } else {
+          this.y += Math.sin(this.angle + time * 2) * 0.2
+        }
+      }
+
+      draw() {
+        ctx!.fillStyle = this.color
+        ctx!.beginPath()
+        ctx!.arc(this.x, this.y, this.size, 0, Math.PI * 2)
+        ctx!.fill()
+      }
+    }
+
+    function createHeart() {
+      const particles: Particle[] = []
+      const centerX = canvas.width / 2
+      const centerY = canvas.height / 2
+      const size = Math.min(canvas.width, canvas.height) * 0.3
+
+      for (let i = 0; i < 3000; i++) {
+        const t = i / 3000 * Math.PI * 2
+        const x = 16 * Math.pow(Math.sin(t), 3)
+        const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t))
+        const targetX = centerX + x * size / 16
+        const targetY = centerY + y * size / 16
+
+        const startX = Math.random() * canvas.width
+        const startY = canvas.height + Math.random() * 50 // Start below the canvas
+
+        particles.push(new Particle(startX, startY, targetX, targetY))
+      }
+
+      return particles
+    }
+
+    let particles = createHeart()
+    let time = 0
+
+    function animate() {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      time += 0.01
+      particles.forEach(particle => {
+        particle.update(time)
+        particle.draw()
+      })
+
+      requestAnimationFrame(animate)
+    }
+
+    animate()
+
+    const handleResize = () => {
+      setCanvasSize()
+      particles = createHeart()
+    }
+
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    <canvas
+      ref={canvasRef}
+      className="w-full h-screen bg-black"
+    />
+  )
 }
